@@ -30,7 +30,11 @@ export default async function handler(req, res) {
     });
 
     const tokens = await tokenRes.json();
-    if (!tokens.access_token) throw new Error('No access token received');
+    if (!tokens.access_token) {
+     console.error('Google token error:', JSON.stringify(tokens));
+     console.error('Redirect URI used:', `${process.env.VITE_APP_URL}/api/auth/callback`);
+     throw new Error(`No access token: ${tokens.error} — ${tokens.error_description}`);
+   }
 
     // Get user profile
     const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
