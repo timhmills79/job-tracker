@@ -24,7 +24,7 @@ export default async function handler(req, res) {
         code,
         client_id: process.env.GOOGLE_CLIENT_ID,
         client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: `${process.env.VITE_APP_URL}/api/auth/callback`,
+        redirect_uri: `${process.env.APP_URL}/api/auth/callback`,
         grant_type: 'authorization_code',
       }),
     });
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     const tokens = await tokenRes.json();
     if (!tokens.access_token) {
      console.error('Google token error:', JSON.stringify(tokens));
-     console.error('Redirect URI used:', `${process.env.VITE_APP_URL}/api/auth/callback`);
+     console.error('Redirect URI used:', `${process.env.APP_URL}/api/auth/callback`);
      throw new Error(`No access token: ${tokens.error} — ${tokens.error_description}`);
    }
 
