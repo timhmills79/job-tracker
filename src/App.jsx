@@ -362,14 +362,14 @@ function Tracker({ user }) {
 
     try {
       for(const title of titles){
-        const searches=[];
-        if(enabledSources.has('ziprecruiter')) searches.push(searchZip(title,location,locationType,seniority,salaryMin).then(r=>{addResults(r);setSourceStatus(p=>({...p,ziprecruiter:'done'}));}).catch(()=>setSourceStatus(p=>({...p,ziprecruiter:'error'}))));
-        if(enabledSources.has('indeed'))       searches.push(searchIndeed(title,location,locationType,seniority,salaryMin).then(r=>{addResults(r);setSourceStatus(p=>({...p,indeed:'done'}));}).catch(()=>setSourceStatus(p=>({...p,indeed:'error'}))));
-        if(enabledSources.has('linkedin'))     searches.push(searchLinkedIn(title,location,locationType).then(r=>{addResults(r);setSourceStatus(p=>({...p,linkedin:'done'}));}).catch(()=>setSourceStatus(p=>({...p,linkedin:'error'}))));
-        if(enabledSources.has('glassdoor'))    searches.push(searchGlassdoor(title,location,locationType).then(r=>{addResults(r);setSourceStatus(p=>({...p,glassdoor:'done'}));}).catch(()=>setSourceStatus(p=>({...p,glassdoor:'error'}))));
-        if(enabledSources.has('usajobs'))      searches.push(searchUSAJobs(title,location,locationType).then(r=>{addResults(r);setSourceStatus(p=>({...p,usajobs:'done'}));}).catch(()=>setSourceStatus(p=>({...p,usajobs:'error'}))));
-        if(enabledSources.has('weworkremotely'))searches.push(searchWWR(title).then(r=>{addResults(r);setSourceStatus(p=>({...p,weworkremotely:'done'}));}).catch(()=>setSourceStatus(p=>({...p,weworkremotely:'error'}))));
-        await Promise.all(searches);
+        const delay = ms => new Promise(r => setTimeout(r, ms));
+
+if(enabledSources.has('ziprecruiter')) { await searchZip(title,location,locationType,seniority,salaryMin).then(r=>{addResults(r);setSourceStatus(p=>({...p,ziprecruiter:'done'}));}).catch(()=>setSourceStatus(p=>({...p,ziprecruiter:'error'}))); await delay(2000); }
+if(enabledSources.has('indeed'))       { await searchIndeed(title,location,locationType,seniority,salaryMin).then(r=>{addResults(r);setSourceStatus(p=>({...p,indeed:'done'}));}).catch(()=>setSourceStatus(p=>({...p,indeed:'error'}))); await delay(2000); }
+if(enabledSources.has('linkedin'))     { await searchLinkedIn(title,location,locationType).then(r=>{addResults(r);setSourceStatus(p=>({...p,linkedin:'done'}));}).catch(()=>setSourceStatus(p=>({...p,linkedin:'error'}))); await delay(2000); }
+if(enabledSources.has('glassdoor'))    { await searchGlassdoor(title,location,locationType).then(r=>{addResults(r);setSourceStatus(p=>({...p,glassdoor:'done'}));}).catch(()=>setSourceStatus(p=>({...p,glassdoor:'error'}))); await delay(2000); }
+if(enabledSources.has('usajobs'))      { await searchUSAJobs(title,location,locationType).then(r=>{addResults(r);setSourceStatus(p=>({...p,usajobs:'done'}));}).catch(()=>setSourceStatus(p=>({...p,usajobs:'error'}))); await delay(2000); }
+if(enabledSources.has('weworkremotely')){ await searchWWR(title).then(r=>{addResults(r);setSourceStatus(p=>({...p,weworkremotely:'done'}));}).catch(()=>setSourceStatus(p=>({...p,weworkremotely:'error'}))); }
       }
       if(allJobs.length===0) throw new Error('No results found from any source.');
       if(resumeReady){for(const job of allJobs)if(!dupSet.has(job.id))await scoreJob(job);}
