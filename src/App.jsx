@@ -21,7 +21,7 @@ const SOURCES = [
 
 // ── API helpers ───────────────────────────────────────────────────────────────
 async function apiClaude(messages, mcpServers = [], maxTokens = 1000, tools = []) {
-  const body = { model: 'claude-sonnet-4-5-20251001', max_tokens: maxTokens, messages };
+  const body = { model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages };
   if (mcpServers.length) body.mcp_servers = mcpServers;
   if (tools.length) body.tools = tools;
   const res = await fetch('/api/claude', {
@@ -339,7 +339,7 @@ function Tracker({ user }) {
       let messages;
       if(resumeMode==='upload'&&resumeBase64) messages=[{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:resumeBase64}},{type:'text',text:prompt}]}];
       else messages=[{role:'user',content:`Original Resume:\n\n${resumeText}\n\n---\n\n${prompt}`}];
-      const res=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5-20251001',max_tokens:4000,messages})});
+      const res=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,messages})});
       const data=await res.json();
       const text=getTextBlock(data);
       if(!text) throw new Error('No response');
