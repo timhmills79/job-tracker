@@ -78,33 +78,33 @@ function isDuplicate(job, seen) {
 // ── Source search functions ───────────────────────────────────────────────────
 async function searchZip(title,loc,locType,sen,salMin){
   const senStr=sen?` experience level ${sen}`:''; const salStr=salMin?` minimum salary $${salMin}`:'';
-  const d=await apiClaude([{role:'user',content:`Search ZipRecruiter.com for current "${title}" job postings${loc?` in ${loc}`:''}${locType==='REMOTE'?' that are remote':''}${senStr}${salStr}. Find real listings from ziprecruiter.com. Return ONLY JSON array of up to 6:[{id,title,company,location,salary,url,snippet,posted}]. Unique string IDs. salary=Not specified if unknown. No markdown.`}],[],1000,WEB_TOOLS);
+  const d=await apiClaude([{role:'user',content:`Search ZipRecruiter.com for current "${title}" job postings${loc?` in ${loc}`:''}${locType==='REMOTE'?' that are remote':''}${senStr}${salStr}. Find real listings from ziprecruiter.com. Return ONLY JSON array of up to 6:[{id,title,company,location,salary,url,snippet,posted}]. Unique string IDs. salary=Not specified if unknown. No markdown.`}],[],2000,WEB_TOOLS);
   const p=parseJSON(getTextBlock(d));
   return Array.isArray(p)?p.map((j,i)=>({...j,id:`zip-${title}-${j.id||i}`,source:'ziprecruiter',searchTitle:title})):[];
 }
 async function searchIndeed(title,loc,locType,sen,salMin){
   const senStr=sen?` experience level ${sen}`:''; const salStr=salMin?` minimum salary $${salMin}`:'';
-  const d=await apiClaude([{role:'user',content:`Search Indeed.com for current "${title}" job postings${loc?` in ${loc}`:''}${locType==='REMOTE'?' that are remote':''}${senStr}${salStr}. Find real listings from indeed.com. Return ONLY JSON array of up to 6:[{id,title,company,location,salary,url,snippet,posted}]. Unique string IDs. salary=Not specified if unknown. No markdown.`}],[],1000,WEB_TOOLS);
+  const d=await apiClaude([{role:'user',content:`Search Indeed.com for current "${title}" job postings${loc?` in ${loc}`:''}${locType==='REMOTE'?' that are remote':''}${senStr}${salStr}. Find real listings from indeed.com. Return ONLY JSON array of up to 6:[{id,title,company,location,salary,url,snippet,posted}]. Unique string IDs. salary=Not specified if unknown. No markdown.`}],[],2000,WEB_TOOLS);
   const p=parseJSON(getTextBlock(d));
   return Array.isArray(p)?p.map((j,i)=>({...j,id:`indeed-${title}-${j.id||i}`,source:'indeed',searchTitle:title})):[];
 }
 async function searchLinkedIn(title,loc,locType){
-  const d=await apiClaude([{role:'user',content:`Search LinkedIn Jobs for "${title}"${loc?` in ${loc}`:''}${locType==='REMOTE'?' remote':''}.Return up to 6 current postings as ONLY JSON array:[{id,title,company,location,salary,url,snippet,posted}].salary="Not specified" if unknown.No markdown.`}],[],1000,WEB_TOOLS);
+  const d=await apiClaude([{role:'user',content:`Search LinkedIn Jobs for "${title}"${loc?` in ${loc}`:''}${locType==='REMOTE'?' remote':''}.Return up to 6 current postings as ONLY JSON array:[{id,title,company,location,salary,url,snippet,posted}].salary="Not specified" if unknown.No markdown.`}],[],2000,WEB_TOOLS);
   const p=parseJSON(getTextBlock(d));
   return Array.isArray(p)?p.map((j,i)=>({...j,id:`linkedin-${title}-${j.id||i}`,source:'linkedin',searchTitle:title})):[];
 }
 async function searchGlassdoor(title,loc,locType){
-  const d=await apiClaude([{role:'user',content:`Search Glassdoor Jobs for "${title}"${loc?` in ${loc}`:''}${locType==='REMOTE'?' remote':''}.Return up to 6 as ONLY JSON array:[{id,title,company,location,salary,url,snippet,posted}].No markdown.`}],[],1000,WEB_TOOLS);
+  const d=await apiClaude([{role:'user',content:`Search Glassdoor Jobs for "${title}"${loc?` in ${loc}`:''}${locType==='REMOTE'?' remote':''}.Return up to 6 as ONLY JSON array:[{id,title,company,location,salary,url,snippet,posted}].No markdown.`}],[],2000,WEB_TOOLS);
   const p=parseJSON(getTextBlock(d));
   return Array.isArray(p)?p.map((j,i)=>({...j,id:`glassdoor-${title}-${j.id||i}`,source:'glassdoor',searchTitle:title})):[];
 }
 async function searchUSAJobs(title,loc,locType){
-  const d=await apiClaude([{role:'user',content:`Search usajobs.gov for "${title}" federal jobs${loc?` in ${loc}`:''}${locType==='REMOTE'?' telework eligible':''}.Return up to 6 as ONLY JSON:[{id,title,company,location,salary,url,snippet,posted}].Use agency as company.No markdown.`}],[],1000,WEB_TOOLS);
+  const d=await apiClaude([{role:'user',content:`Search usajobs.gov for "${title}" federal jobs${loc?` in ${loc}`:''}${locType==='REMOTE'?' telework eligible':''}.Return up to 6 as ONLY JSON:[{id,title,company,location,salary,url,snippet,posted}].Use agency as company.No markdown.`}],[],2000,WEB_TOOLS);
   const p=parseJSON(getTextBlock(d));
   return Array.isArray(p)?p.map((j,i)=>({...j,id:`usa-${title}-${j.id||i}`,source:'usajobs',searchTitle:title})):[];
 }
 async function searchWWR(title){
-  const d=await apiClaude([{role:'user',content:`Search weworkremotely.com for "${title}" remote jobs.Return up to 6 as ONLY JSON:[{id,title,company,location,salary,url,snippet,posted}].location="Remote".No markdown.`}],[],1000,WEB_TOOLS);
+  const d=await apiClaude([{role:'user',content:`Search weworkremotely.com for "${title}" remote jobs.Return up to 6 as ONLY JSON:[{id,title,company,location,salary,url,snippet,posted}].location="Remote".No markdown.`}],[],2000,WEB_TOOLS);
   const p=parseJSON(getTextBlock(d));
   return Array.isArray(p)?p.map((j,i)=>({...j,id:`wwr-${title}-${j.id||i}`,source:'weworkremotely',searchTitle:title,location:'Remote'})):[];
 }
@@ -302,7 +302,7 @@ function Tracker({ user }) {
     setSalaryResearch(p=>({...p,[job.id]:{data:null,loading:true}}));
     try {
       const locHint=job.location||location||'United States';
-      const d=await apiClaude([{role:'user',content:`Search for ${new Date().getFullYear()} salary data for "${job.title}" jobs${locHint!=='United States'?` in ${locHint}`:' in the US'}. Use Glassdoor,LinkedIn Salary,Indeed,Levels.fyi,or BLS. Return ONLY JSON:{"low":<25pct int>,"mid":<median int>,"high":<75pct int>,"currency":"$","verdict":"<Below Market|At Market|Above Market|Market Rate>","verdictColor":{"bg":"<hex>","border":"<hex>","text":"<hex>"}}. verdictColors: Below Market=(#fce4ec,#f48fb1,#c62828),At Market=(#e8f4fd,#b3d8f0,#1a6fa8),Above Market=(#edf7ed,#a5d6a7,#2e7d32),Market Rate=(#f0f0f0,#ddd,#666). Listed salary:"${job.salary||'Not specified'}". No other text.`}],[],1000,WEB_TOOLS);
+      const d=await apiClaude([{role:'user',content:`Search for ${new Date().getFullYear()} salary data for "${job.title}" jobs${locHint!=='United States'?` in ${locHint}`:' in the US'}. Use Glassdoor,LinkedIn Salary,Indeed,Levels.fyi,or BLS. Return ONLY JSON:{"low":<25pct int>,"mid":<median int>,"high":<75pct int>,"currency":"$","verdict":"<Below Market|At Market|Above Market|Market Rate>","verdictColor":{"bg":"<hex>","border":"<hex>","text":"<hex>"}}. verdictColors: Below Market=(#fce4ec,#f48fb1,#c62828),At Market=(#e8f4fd,#b3d8f0,#1a6fa8),Above Market=(#edf7ed,#a5d6a7,#2e7d32),Market Rate=(#f0f0f0,#ddd,#666). Listed salary:"${job.salary||'Not specified'}". No other text.`}],[],2000,WEB_TOOLS);
       const parsed=parseJSON(getTextBlock(d));
       if(parsed?.low){const fmt=n=>{const num=parseInt(String(n).replace(/[^0-9]/g,''));return num>999?`${Math.round(num/1000)}k`:String(num);};setSalaryResearch(p=>({...p,[job.id]:{data:{...parsed,low:fmt(parsed.low),mid:fmt(parsed.mid),high:fmt(parsed.high)},loading:false}}));}
       else{setSalaryResearch(p=>({...p,[job.id]:{data:{low:'N/A',mid:'N/A',high:'N/A',currency:'$',verdict:'No Data',verdictColor:{bg:'#fafafa',border:'#ddd',text:'#999'}},loading:false}}));}
