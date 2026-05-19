@@ -77,12 +77,14 @@ function isDuplicate(job, seen) {
 
 // ── Source search functions ───────────────────────────────────────────────────
 async function searchZip(title,loc,locType,sen,salMin){
-  const d=await apiClaude([{role:'user',content:`Search ZipRecruiter. Query:"${title}"${loc?`,Location:${loc}`:''}${locType?`,Location type:${locType}`:''}${sen?`,Seniority:${sen}`:''}${salMin?`,Min salary:${salMin}`:''}.Return up to 6 results as ONLY JSON array:[{id,title,company,location,salary,url,snippet,posted}].No markdown.`}],ZIP_MCP);
+  const senStr=sen?` experience level ${sen}`:''; const salStr=salMin?` minimum salary $${salMin}`:'';
+  const d=await apiClaude([{role:'user',content:`Search ZipRecruiter.com for current "${title}" job postings${loc?` in ${loc}`:''}${locType==='REMOTE'?' that are remote':''}${senStr}${salStr}. Find real listings from ziprecruiter.com. Return ONLY JSON array of up to 6:[{id,title,company,location,salary,url,snippet,posted}]. Unique string IDs. salary=Not specified if unknown. No markdown.`}],[],1000,WEB_TOOLS);
   const p=parseJSON(getTextBlock(d));
   return Array.isArray(p)?p.map((j,i)=>({...j,id:`zip-${title}-${j.id||i}`,source:'ziprecruiter',searchTitle:title})):[];
 }
 async function searchIndeed(title,loc,locType,sen,salMin){
-  const d=await apiClaude([{role:'user',content:`Search Indeed for jobs."${title}"${loc?` in ${loc}`:''}${locType==='REMOTE'?', remote':''}${sen?`, level:${sen}`:''}${salMin?`, min $${salMin}`:''}.Return up to 6 as ONLY JSON array:[{id,title,company,location,salary,url,snippet,posted}].No markdown.`}],INDEED_MCP);
+  const senStr=sen?` experience level ${sen}`:''; const salStr=salMin?` minimum salary $${salMin}`:'';
+  const d=await apiClaude([{role:'user',content:`Search Indeed.com for current "${title}" job postings${loc?` in ${loc}`:''}${locType==='REMOTE'?' that are remote':''}${senStr}${salStr}. Find real listings from indeed.com. Return ONLY JSON array of up to 6:[{id,title,company,location,salary,url,snippet,posted}]. Unique string IDs. salary=Not specified if unknown. No markdown.`}],[],1000,WEB_TOOLS);
   const p=parseJSON(getTextBlock(d));
   return Array.isArray(p)?p.map((j,i)=>({...j,id:`indeed-${title}-${j.id||i}`,source:'indeed',searchTitle:title})):[];
 }
