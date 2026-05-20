@@ -11,12 +11,10 @@ const LOCATION_TYPE_OPTIONS = [
   { label: 'Hybrid', value: 'HYBRID' }, { label: 'On-site', value: 'PHYSICAL' },
 ];
 const SOURCES = [
-  { id: 'ziprecruiter',   label: 'ZipRecruiter',      emoji: '🔍', color: '#4a90d9' },
-  { id: 'indeed',         label: 'Indeed',             emoji: '💼', color: '#003a9b' },
-  { id: 'linkedin',       label: 'LinkedIn',           emoji: '🔗', color: '#0077b5' },
-  { id: 'glassdoor',      label: 'Glassdoor',          emoji: '🟢', color: '#0caa41' },
-  { id: 'usajobs',        label: 'USAJobs',            emoji: '🏛️', color: '#1a3e6f' },
-  { id: 'weworkremotely', label: 'We Work Remotely',   emoji: '🌎', color: '#1f9e6e' },
+  { id: 'adzuna',    label: 'Adzuna',          emoji: '🔍', color: '#4a90d9' },
+  { id: 'remoteok',  label: 'RemoteOK',        emoji: '🌎', color: '#1f9e6e' },
+  { id: 'themuse',   label: 'The Muse',        emoji: '💜', color: '#7b5ea7' },
+  { id: 'usajobs',   label: 'USAJobs',         emoji: '🏛️', color: '#1a3e6f' },
 ];
 
 // ── API helpers ───────────────────────────────────────────────────────────────
@@ -76,39 +74,17 @@ function isDuplicate(job, seen) {
 }
 
 // ── Source search functions ───────────────────────────────────────────────────
-async function searchZip(title,loc,locType,sen,salMin){
-  const senStr=sen?` experience level ${sen}`:''; const salStr=salMin?` minimum salary $${salMin}`:'';
-  const d=await apiClaude([{role:'user',content:`Search ZipRecruiter.com for current "${title}" job postings${loc?` in ${loc}`:''}${locType==='REMOTE'?' that are remote':''}${senStr}${salStr}. Find real listings from ziprecruiter.com. Return ONLY JSON array of up to 6:[{id,title,company,location,salary,url,snippet,posted}]. Unique string IDs. salary=Not specified if unknown. No markdown.`}],[],2000,WEB_TOOLS);
-  const p=parseJSON(getTextBlock(d));
-  return Array.isArray(p)?p.map((j,i)=>({...j,id:`zip-${title}-${j.id||i}`,source:'ziprecruiter',searchTitle:title})):[];
+// ── Free API search functions (no Claude tokens) ─────────────────────────────
+async function searchFreeAPI(source, title, location, locationType, seniority, salaryMin) {
+  const res = await fetch('/api/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source, title, location, locationType, seniority, salaryMin }),
+  });
+  if (res.status === 401) throw new Error('SESSION_EXPIRED');
+  const data = await res.json();
+  return (data.results || []).map(j => ({ ...j, searchTitle: title }));
 }
-async function searchIndeed(title,loc,locType,sen,salMin){
-  const senStr=sen?` experience level ${sen}`:''; const salStr=salMin?` minimum salary $${salMin}`:'';
-  const d=await apiClaude([{role:'user',content:`Search Indeed.com for current "${title}" job postings${loc?` in ${loc}`:''}${locType==='REMOTE'?' that are remote':''}${senStr}${salStr}. Find real listings from indeed.com. Return ONLY JSON array of up to 6:[{id,title,company,location,salary,url,snippet,posted}]. Unique string IDs. salary=Not specified if unknown. No markdown.`}],[],2000,WEB_TOOLS);
-  const p=parseJSON(getTextBlock(d));
-  return Array.isArray(p)?p.map((j,i)=>({...j,id:`indeed-${title}-${j.id||i}`,source:'indeed',searchTitle:title})):[];
-}
-async function searchLinkedIn(title,loc,locType){
-  const d=await apiClaude([{role:'user',content:`Search LinkedIn Jobs for "${title}"${loc?` in ${loc}`:''}${locType==='REMOTE'?' remote':''}.Return up to 6 current postings as ONLY JSON array:[{id,title,company,location,salary,url,snippet,posted}].salary="Not specified" if unknown.No markdown.`}],[],2000,WEB_TOOLS);
-  const p=parseJSON(getTextBlock(d));
-  return Array.isArray(p)?p.map((j,i)=>({...j,id:`linkedin-${title}-${j.id||i}`,source:'linkedin',searchTitle:title})):[];
-}
-async function searchGlassdoor(title,loc,locType){
-  const d=await apiClaude([{role:'user',content:`Search Glassdoor Jobs for "${title}"${loc?` in ${loc}`:''}${locType==='REMOTE'?' remote':''}.Return up to 6 as ONLY JSON array:[{id,title,company,location,salary,url,snippet,posted}].No markdown.`}],[],2000,WEB_TOOLS);
-  const p=parseJSON(getTextBlock(d));
-  return Array.isArray(p)?p.map((j,i)=>({...j,id:`glassdoor-${title}-${j.id||i}`,source:'glassdoor',searchTitle:title})):[];
-}
-async function searchUSAJobs(title,loc,locType){
-  const d=await apiClaude([{role:'user',content:`Search usajobs.gov for "${title}" federal jobs${loc?` in ${loc}`:''}${locType==='REMOTE'?' telework eligible':''}.Return up to 6 as ONLY JSON:[{id,title,company,location,salary,url,snippet,posted}].Use agency as company.No markdown.`}],[],2000,WEB_TOOLS);
-  const p=parseJSON(getTextBlock(d));
-  return Array.isArray(p)?p.map((j,i)=>({...j,id:`usa-${title}-${j.id||i}`,source:'usajobs',searchTitle:title})):[];
-}
-async function searchWWR(title){
-  const d=await apiClaude([{role:'user',content:`Search weworkremotely.com for "${title}" remote jobs.Return up to 6 as ONLY JSON:[{id,title,company,location,salary,url,snippet,posted}].location="Remote".No markdown.`}],[],2000,WEB_TOOLS);
-  const p=parseJSON(getTextBlock(d));
-  return Array.isArray(p)?p.map((j,i)=>({...j,id:`wwr-${title}-${j.id||i}`,source:'weworkremotely',searchTitle:title,location:'Remote'})):[];
-}
-
 // ── DOCX download ─────────────────────────────────────────────────────────────
 async function downloadDocx(text, title, company) {
   const lines=text.split('\n'), children=[];
@@ -302,7 +278,7 @@ function Tracker({ user }) {
     setSalaryResearch(p=>({...p,[job.id]:{data:null,loading:true}}));
     try {
       const locHint=job.location||location||'United States';
-      const d=await apiClaude([{role:'user',content:`Search for ${new Date().getFullYear()} salary data for "${job.title}" jobs${locHint!=='United States'?` in ${locHint}`:' in the US'}. Use Glassdoor,LinkedIn Salary,Indeed,Levels.fyi,or BLS. Return ONLY JSON:{"low":<25pct int>,"mid":<median int>,"high":<75pct int>,"currency":"$","verdict":"<Below Market|At Market|Above Market|Market Rate>","verdictColor":{"bg":"<hex>","border":"<hex>","text":"<hex>"}}. verdictColors: Below Market=(#fce4ec,#f48fb1,#c62828),At Market=(#e8f4fd,#b3d8f0,#1a6fa8),Above Market=(#edf7ed,#a5d6a7,#2e7d32),Market Rate=(#f0f0f0,#ddd,#666). Listed salary:"${job.salary||'Not specified'}". No other text.`}],[],2000,WEB_TOOLS);
+      const d=await apiClaude([{role:'user',content:`Search for ${new Date().getFullYear()} salary data for "${job.title}" jobs${locHint!=='United States'?` in ${locHint}`:' in the US'}. Use Glassdoor,LinkedIn Salary,Indeed,Levels.fyi,or BLS. Return ONLY JSON:{"low":<25pct int>,"mid":<median int>,"high":<75pct int>,"currency":"$","verdict":"<Below Market|At Market|Above Market|Market Rate>","verdictColor":{"bg":"<hex>","border":"<hex>","text":"<hex>"}}. verdictColors: Below Market=(#fce4ec,#f48fb1,#c62828),At Market=(#e8f4fd,#b3d8f0,#1a6fa8),Above Market=(#edf7ed,#a5d6a7,#2e7d32),Market Rate=(#f0f0f0,#ddd,#666). Listed salary:"${job.salary||'Not specified'}". No other text.`}],[],1000,WEB_TOOLS);
       const parsed=parseJSON(getTextBlock(d));
       if(parsed?.low){const fmt=n=>{const num=parseInt(String(n).replace(/[^0-9]/g,''));return num>999?`${Math.round(num/1000)}k`:String(num);};setSalaryResearch(p=>({...p,[job.id]:{data:{...parsed,low:fmt(parsed.low),mid:fmt(parsed.mid),high:fmt(parsed.high)},loading:false}}));}
       else{setSalaryResearch(p=>({...p,[job.id]:{data:{low:'N/A',mid:'N/A',high:'N/A',currency:'$',verdict:'No Data',verdictColor:{bg:'#fafafa',border:'#ddd',text:'#999'}},loading:false}}));}
@@ -362,14 +338,16 @@ function Tracker({ user }) {
 
     try {
       for(const title of titles){
-        const delay = ms => new Promise(r => setTimeout(r, ms));
-
-if(enabledSources.has('ziprecruiter')) { await searchZip(title,location,locationType,seniority,salaryMin).then(r=>{addResults(r);setSourceStatus(p=>({...p,ziprecruiter:'done'}));}).catch(()=>setSourceStatus(p=>({...p,ziprecruiter:'error'}))); await delay(60000); }
-if(enabledSources.has('indeed'))       { await searchIndeed(title,location,locationType,seniority,salaryMin).then(r=>{addResults(r);setSourceStatus(p=>({...p,indeed:'done'}));}).catch(()=>setSourceStatus(p=>({...p,indeed:'error'}))); await delay(60000); }
-if(enabledSources.has('linkedin'))     { await searchLinkedIn(title,location,locationType).then(r=>{addResults(r);setSourceStatus(p=>({...p,linkedin:'done'}));}).catch(()=>setSourceStatus(p=>({...p,linkedin:'error'}))); await delay(60000); }
-if(enabledSources.has('glassdoor'))    { await searchGlassdoor(title,location,locationType).then(r=>{addResults(r);setSourceStatus(p=>({...p,glassdoor:'done'}));}).catch(()=>setSourceStatus(p=>({...p,glassdoor:'error'}))); await delay(60000); }
-if(enabledSources.has('usajobs'))      { await searchUSAJobs(title,location,locationType).then(r=>{addResults(r);setSourceStatus(p=>({...p,usajobs:'done'}));}).catch(()=>setSourceStatus(p=>({...p,usajobs:'error'}))); await delay(60000); }
-if(enabledSources.has('weworkremotely')){ await searchWWR(title).then(r=>{addResults(r);setSourceStatus(p=>({...p,weworkremotely:'done'}));}).catch(()=>setSourceStatus(p=>({...p,weworkremotely:'error'}))); }
+        const searches=[];
+        // Free API sources — run in parallel, no Claude token cost
+        const sourceSearches = SOURCES
+          .filter(src => enabledSources.has(src.id))
+          .map(src =>
+            searchFreeAPI(src.id, title, location, locationType, seniority, salaryMin)
+              .then(r => { addResults(r); setSourceStatus(p => ({...p, [src.id]: 'done'})); })
+              .catch(e => { console.warn(src.id + ' failed:', e); setSourceStatus(p => ({...p, [src.id]: 'error'})); })
+          );
+        await Promise.all(sourceSearches);
       }
       if(allJobs.length===0) throw new Error('No results found from any source.');
       if(resumeReady){for(const job of allJobs)if(!dupSet.has(job.id))await scoreJob(job);}
